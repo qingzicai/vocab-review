@@ -320,6 +320,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
+    position: sticky;
+    bottom: 1rem;
+    background: var(--paper);
+    padding: 0.75rem 0;
   }
 
   .rating-btn {
@@ -601,7 +605,7 @@ function buildSession() {
   const due = allCards.filter(c => c.nextReview <= now);
   const isNew = c => c.reps === 0;
 
-  const newCards = due.filter(isNew).slice(0, 5);
+  const newCards = due.filter(isNew);
   const reviewCards = due.filter(c => !isNew(c));
   sessionQueue = shuffle([...newCards, ...reviewCards]);
 
@@ -666,8 +670,10 @@ function flipCard() {
   isFlipped = true;
   document.getElementById('card-inner').classList.add('flipped');
   setTimeout(() => {
-    document.getElementById('rating-wrap').style.display = 'grid';
-  }, 300);
+    const ratingWrap = document.getElementById('rating-wrap');
+    ratingWrap.style.display = 'grid';
+    ratingWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 350);
 }
 
 function rate(quality) {
