@@ -452,23 +452,12 @@
   <div class="site-sub">词汇复习 · Spaced Repetition</div>
 </header>
 
-<!-- setup -->
+<!-- setup / loading -->
 <div id="setup-screen">
-  <div class="setup-card">
-    <h2>开始复习</h2>
-    <p>粘贴你的 Google Sheets CSV 发布链接，app 会自动读取词条并按记忆曲线安排复习。</p>
-    <input type="text" id="csv-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
-    <button class="btn-primary" onclick="loadCSV()">载入词条 →</button>
-
-    <div class="how-to">
-      <h3>如何获取 CSV 链接</h3>
-      <ol>
-        <li>打开你的 Google Sheets</li>
-        <li>File → Share → Publish to web</li>
-        <li>选择对应的 Sheet，格式选 CSV</li>
-        <li>点击 Publish，复制链接粘贴到上方</li>
-      </ol>
-    </div>
+  <div class="setup-card" style="text-align:center;">
+    <div style="font-size:2rem; margin-bottom:1rem;">⟳</div>
+    <h2 id="loading-title">正在载入词条…</h2>
+    <p id="loading-sub">从云端读取最新词汇，请稍候。</p>
   </div>
 </div>
 
@@ -532,6 +521,7 @@
 </div>
 
 <script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbz2Pd_HJiEbFeJFldvxPjzT0Lt6kqcpC7ne-WNdWj94vAzb501D3uMTRHSw8RXYECwk1w/exec';
 const STORAGE_KEY = 'btw_srs_v2';
 let allCards = [];
 let sessionQueue = [];
@@ -568,57 +558,41 @@ function loadData() {
   return raw ? JSON.parse(raw) : null;
 }
 
-// ── CSV ──
-async function loadCSV() {
-  const url = document.getElementById('csv-url').value.trim();
-  if (!url) return alert('请先粘贴 CSV 链接');
-
-  const corsUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+// ── 从 API 加载 ──
+async function loadFromAPI() {
   try {
-    const res = await fetch(corsUrl);
-    const text = await res.text();
-    parseCSV(text);
+    const res = await fetch(API_URL);
+    const vocab = await res.json();
+    mergeWithSaved(vocab);
   } catch (e) {
-    alert('无法读取 CSV，请确认链接已发布且网络正常。\n' + e.message);
+    // 网络失败时，尝试用本地缓存继续
+    const saved = loadData();
+    if (saved && saved.length > 0) {
+      allCards = saved;
+      document.getElementById('loading-title').textContent = '使用本地缓存';
+      document.getElementById('loading-sub').textContent = '网络不可用，使用上次保存的词条。';
+      setTimeout(buildSession, 800);
+    } else {
+      document.getElementById('loading-title').textContent = '载入失败';
+      document.getElementById('loading-sub').textContent = '请检查网络连接后刷新页面。\n' + e.message;
+    }
   }
 }
 
-function parseCSV(text) {
-  const rows = text.trim().split('\n').slice(1);
+function mergeWithSaved(vocabList) {
   const saved = loadData();
   const savedMap = {};
   if (saved) saved.forEach(c => savedMap[c.expression] = c);
 
-  allCards = rows.map(row => {
-    const cols = parseCSVRow(row);
-    const vocab = {
-      expression: (cols[0] || '').trim(),
-      defaultReplacement: (cols[1] || '').trim(),
-      definition: (cols[2] || '').trim(),
-      collocations: (cols[3] || '').trim(),
-      sampleSentence: (cols[4] || '').trim(),
-    };
-    if (!vocab.expression) return null;
-    return savedMap[vocab.expression]
-      ? { ...savedMap[vocab.expression], ...vocab }
-      : initCard(vocab);
-  }).filter(Boolean);
+  allCards = vocabList
+    .filter(v => v.expression)
+    .map(v => savedMap[v.expression]
+      ? { ...savedMap[v.expression], ...v }
+      : initCard(v)
+    );
 
   saveData();
   buildSession();
-}
-
-function parseCSVRow(row) {
-  const cols = [];
-  let inQuote = false, cur = '';
-  for (let i = 0; i < row.length; i++) {
-    const ch = row[i];
-    if (ch === '"') { inQuote = !inQuote; continue; }
-    if (ch === ',' && !inQuote) { cols.push(cur); cur = ''; continue; }
-    cur += ch;
-  }
-  cols.push(cur);
-  return cols;
 }
 
 // ── session ──
@@ -627,7 +601,6 @@ function buildSession() {
   const due = allCards.filter(c => c.nextReview <= now);
   const isNew = c => c.reps === 0;
 
-  // 新词最多 5 张，到期词全部复习，随机打乱
   const newCards = due.filter(isNew).slice(0, 5);
   const reviewCards = due.filter(c => !isNew(c));
   sessionQueue = shuffle([...newCards, ...reviewCards]);
@@ -718,9 +691,9 @@ function rate(quality) {
 }
 
 function showDone(nothingDue) {
+  document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('review-screen').style.display = 'none';
   document.getElementById('done-screen').style.display = 'block';
-  document.getElementById('progress-fill').style.width = '100%';
 
   const nextReview = allCards
     .filter(c => c.nextReview > Date.now())
@@ -739,7 +712,7 @@ function showDone(nothingDue) {
 }
 
 function restartSession() {
-  buildSession();
+  loadFromAPI();
 }
 
 function resetAll() {
@@ -760,15 +733,11 @@ function shuffle(arr) {
 
 function formatDate(ts) {
   const d = new Date(ts);
-  return d.getMonth() + 1 + '月' + d.getDate() + '日';
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
 
-// 如果本地已有数据，直接进入复习
-const existing = loadData();
-if (existing && existing.length > 0) {
-  allCards = existing;
-  buildSession();
-}
+// 启动：直接从 API 加载
+loadFromAPI();
 </script>
 </body>
 </html>
