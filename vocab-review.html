@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Between the Words · 词汇复习</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1814;
+    --ink-2: #4a4740;
+    --ink-3: #8a8780;
+    --paper: #f7f4ee;
+    --paper-2: #ede9e0;
+    --paper-3: #e2ddd3;
+    --accent: #b85c2a;
+    --accent-2: #d4854f;
+    --success: #3b6d11;
+    --warn: #854f0b;
+    --danger: #a32d2d;
+    --serif: 'Libre Baskerville', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --r: 12px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .site-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .site-sub {
+    font-size: 0.8rem;
+    color: var(--ink-3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── setup screen ── */
+  #setup-screen {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .setup-card {
+    background: white;
+    border: 1px solid var(--paper-3);
+    border-radius: var(--r);
+    padding: 2rem;
+  }
+
+  .setup-card h2 {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+
+  .setup-card p {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+    margin-bottom: 1.2rem;
+  }
+
+  .setup-card input[type="text"] {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--paper-3);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    background: var(--paper);
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .setup-card input:focus { border-color: var(--accent-2); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-primary:hover { background: var(--accent-2); }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .how-to {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--paper-2);
+  }
+
+  .how-to h3 {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 0.75rem;
+  }
+
+  .how-to ol {
+    padding-left: 1.2rem;
+    font-size: 0.82rem;
+    color: var(--ink-2);
+    line-height: 1.8;
+  }
+
+  /* ── review screen ── */
+  #review-screen { display: none; width: 100%; max-width: 560px; }
+
+  .progress-bar-wrap {
+    height: 3px;
+    background: var(--paper-3);
+    border-radius: 99px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .session-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .session-label {
+    font-size: 0.78rem;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .session-count {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  /* ── flashcard ── */
+  .card-scene {
+    perspective: 1000px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    width: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: white;
+    border: 1px solid var(--paper-3);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+  }
+
+  .card-back {
+    position: absolute;
+    top: 0; left: 0;
+    transform: rotateY(180deg);
+  }
+
+  /* front */
+  .card-tag {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .card-expression {
+    font-family: var(--serif);
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+
+  .card-hint {
+    font-size: 0.8rem;
+    color: var(--ink-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-hint::before {
+    content: '';
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--ink-3);
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  /* back */
+  .back-section {
+    margin-bottom: 1.25rem;
+  }
+
+  .back-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .back-expression {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--paper-2);
+  }
+
+  .back-default {
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    font-style: italic;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--paper-2);
+  }
+
+  .back-default strong {
+    color: var(--ink-2);
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  .back-def {
+    font-size: 0.9rem;
+    color: var(--ink);
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--paper-2);
+  }
+
+  .colloc-list {
+    font-size: 0.82rem;
+    color: var(--ink-2);
+    line-height: 1.9;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--paper-2);
+  }
+
+  .colloc-item { display: block; }
+
+  .colloc-en { color: var(--ink); font-style: italic; }
+
+  .sample-sentence {
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    line-height: 1.7;
+    font-style: italic;
+    background: var(--paper);
+    border-left: 2px solid var(--accent-2);
+    padding: 0.75rem 1rem;
+    border-radius: 0 8px 8px 0;
+  }
+
+  /* rating buttons */
+  .rating-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .rating-btn {
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--paper-3);
+    border-radius: 10px;
+    background: white;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .rating-btn .btn-label { display: block; font-size: 0.72rem; font-weight: 400; margin-top: 3px; }
+
+  .btn-again { color: var(--danger); border-color: #f0baba; }
+  .btn-again:hover { background: #fcebeb; }
+
+  .btn-hard { color: var(--warn); border-color: #f5d8b0; }
+  .btn-hard:hover { background: #faeeda; }
+
+  .btn-good { color: var(--success); border-color: #c0dd97; }
+  .btn-good:hover { background: #eaf3de; }
+
+  /* done screen */
+  #done-screen {
+    display: none;
+    text-align: center;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .done-icon {
+    width: 64px; height: 64px;
+    background: var(--paper-2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.6rem;
+  }
+
+  .done-title {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .done-sub {
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .stat-box {
+    background: white;
+    border: 1px solid var(--paper-3);
+    border-radius: 10px;
+    padding: 1rem 0.5rem;
+  }
+
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    color: var(--ink);
+  }
+
+  .stat-lbl {
+    font-size: 0.72rem;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.65rem 1.5rem;
+    border: 1px solid var(--paper-3);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    background: white;
+    cursor: pointer;
+    margin: 0 6px;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--paper-2); }
+
+  .new-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--paper-2);
+    color: var(--ink-3);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .new-badge.is-new { background: #faeeda; color: var(--warn); }
+  .new-badge.is-due { background: #e1f5ee; color: #0f6e56; }
+
+  @media (max-width: 480px) {
+    .card-face { padding: 2rem 1.25rem; }
+    .rating-wrap { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="site-title">Between the Words</div>
+  <div class="site-sub">词汇复习 · Spaced Repetition</div>
+</header>
+
+<!-- setup -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h2>开始复习</h2>
+    <p>粘贴你的 Google Sheets CSV 发布链接，app 会自动读取词条并按记忆曲线安排复习。</p>
+    <input type="text" id="csv-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+    <button class="btn-primary" onclick="loadCSV()">载入词条 →</button>
+
+    <div class="how-to">
+      <h3>如何获取 CSV 链接</h3>
+      <ol>
+        <li>打开你的 Google Sheets</li>
+        <li>File → Share → Publish to web</li>
+        <li>选择对应的 Sheet，格式选 CSV</li>
+        <li>点击 Publish，复制链接粘贴到上方</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- review -->
+<div id="review-screen">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+  </div>
+  <div class="session-meta">
+    <span class="session-label" id="queue-type">复习中</span>
+    <span class="session-count" id="queue-count"></span>
+  </div>
+
+  <div class="card-scene" onclick="flipCard()">
+    <div class="card-inner" id="card-inner">
+      <!-- front -->
+      <div class="card-face card-front">
+        <div class="card-tag">Expression <span class="new-badge" id="card-badge"></span></div>
+        <div class="card-expression" id="card-expression"></div>
+        <div class="card-hint">点击翻转查看释义</div>
+      </div>
+      <!-- back -->
+      <div class="card-face card-back">
+        <div class="back-expression" id="back-expression"></div>
+        <div class="back-default" id="back-default"></div>
+        <div class="back-section">
+          <div class="back-label">释义</div>
+          <div class="back-def" id="back-def"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">搭配</div>
+          <div class="colloc-list" id="back-colloc"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">例句</div>
+          <div class="sample-sentence" id="back-sample"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rating-wrap" id="rating-wrap" style="display:none">
+    <button class="rating-btn btn-again" onclick="rate(0)">✗ 忘了<span class="btn-label">重新来过</span></button>
+    <button class="rating-btn btn-hard" onclick="rate(3)">△ 模糊<span class="btn-label">再复习一次</span></button>
+    <button class="rating-btn btn-good" onclick="rate(5)">✓ 记住了<span class="btn-label">下次间隔更长</span></button>
+  </div>
+</div>
+
+<!-- done -->
+<div id="done-screen">
+  <div class="done-icon">✦</div>
+  <div class="done-title">今日复习完成</div>
+  <div class="done-sub" id="done-sub"></div>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-lbl">已复习</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-good">0</div><div class="stat-lbl">记住了</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-again">0</div><div class="stat-lbl">需加强</div></div>
+  </div>
+  <button class="btn-secondary" onclick="restartSession()">再来一轮</button>
+  <button class="btn-secondary" onclick="resetAll()">重置数据</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'btw_srs_v2';
+let allCards = [];
+let sessionQueue = [];
+let currentIdx = 0;
+let isFlipped = false;
+let sessionStats = { total: 0, good: 0, again: 0 };
+
+// ── SM-2 ──
+function sm2(card, quality) {
+  if (quality < 3) {
+    card.reps = 0;
+    card.interval = 1;
+  } else {
+    if (card.reps === 0) card.interval = 1;
+    else if (card.reps === 1) card.interval = 6;
+    else card.interval = Math.round(card.interval * card.ef);
+    card.reps += 1;
+  }
+  card.ef = Math.max(1.3, card.ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  card.nextReview = Date.now() + card.interval * 86400000;
+  return card;
+}
+
+function initCard(vocab) {
+  return { ...vocab, reps: 0, ef: 2.5, interval: 1, nextReview: 0 };
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allCards));
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+// ── CSV ──
+async function loadCSV() {
+  const url = document.getElementById('csv-url').value.trim();
+  if (!url) return alert('请先粘贴 CSV 链接');
+
+  const corsUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+  try {
+    const res = await fetch(corsUrl);
+    const text = await res.text();
+    parseCSV(text);
+  } catch (e) {
+    alert('无法读取 CSV，请确认链接已发布且网络正常。\n' + e.message);
+  }
+}
+
+function parseCSV(text) {
+  const rows = text.trim().split('\n').slice(1);
+  const saved = loadData();
+  const savedMap = {};
+  if (saved) saved.forEach(c => savedMap[c.expression] = c);
+
+  allCards = rows.map(row => {
+    const cols = parseCSVRow(row);
+    const vocab = {
+      expression: (cols[0] || '').trim(),
+      defaultReplacement: (cols[1] || '').trim(),
+      definition: (cols[2] || '').trim(),
+      collocations: (cols[3] || '').trim(),
+      sampleSentence: (cols[4] || '').trim(),
+    };
+    if (!vocab.expression) return null;
+    return savedMap[vocab.expression]
+      ? { ...savedMap[vocab.expression], ...vocab }
+      : initCard(vocab);
+  }).filter(Boolean);
+
+  saveData();
+  buildSession();
+}
+
+function parseCSVRow(row) {
+  const cols = [];
+  let inQuote = false, cur = '';
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') { inQuote = !inQuote; continue; }
+    if (ch === ',' && !inQuote) { cols.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  cols.push(cur);
+  return cols;
+}
+
+// ── session ──
+function buildSession() {
+  const now = Date.now();
+  const due = allCards.filter(c => c.nextReview <= now);
+  const isNew = c => c.reps === 0;
+
+  // 新词最多 5 张，到期词全部复习，随机打乱
+  const newCards = due.filter(isNew).slice(0, 5);
+  const reviewCards = due.filter(c => !isNew(c));
+  sessionQueue = shuffle([...newCards, ...reviewCards]);
+
+  if (sessionQueue.length === 0) {
+    showDone(true);
+    return;
+  }
+
+  currentIdx = 0;
+  sessionStats = { total: 0, good: 0, again: 0 };
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'none';
+  document.getElementById('review-screen').style.display = 'block';
+  showCard();
+}
+
+function showCard() {
+  if (currentIdx >= sessionQueue.length) { showDone(false); return; }
+
+  const card = sessionQueue[currentIdx];
+  const isNew = card.reps === 0;
+
+  document.getElementById('card-expression').textContent = card.expression;
+  document.getElementById('back-expression').textContent = card.expression;
+  document.getElementById('back-default').innerHTML =
+    '<strong>中式默认：</strong>' + (card.defaultReplacement || '—');
+  document.getElementById('back-def').textContent = card.definition || '—';
+  document.getElementById('back-sample').textContent = card.sampleSentence || '—';
+
+  const badge = document.getElementById('card-badge');
+  badge.textContent = isNew ? '新词' : '复习';
+  badge.className = 'new-badge ' + (isNew ? 'is-new' : 'is-due');
+
+  const collocEl = document.getElementById('back-colloc');
+  collocEl.innerHTML = '';
+  if (card.collocations) {
+    card.collocations.split(';').forEach(c => {
+      c = c.trim();
+      if (!c) return;
+      const parts = c.split('=');
+      const span = document.createElement('span');
+      span.className = 'colloc-item';
+      span.innerHTML = '<span class="colloc-en">' + (parts[0] || '').trim() + '</span>'
+        + (parts[1] ? ' = ' + parts[1].trim() : '');
+      collocEl.appendChild(span);
+    });
+  }
+
+  const done = currentIdx;
+  const total = sessionQueue.length;
+  document.getElementById('progress-fill').style.width = (done / total * 100) + '%';
+  document.getElementById('queue-count').textContent = (done + 1) + ' / ' + total;
+  document.getElementById('queue-type').textContent = isNew ? '新词' : '复习';
+
+  isFlipped = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('rating-wrap').style.display = 'none';
+}
+
+function flipCard() {
+  if (isFlipped) return;
+  isFlipped = true;
+  document.getElementById('card-inner').classList.add('flipped');
+  setTimeout(() => {
+    document.getElementById('rating-wrap').style.display = 'grid';
+  }, 300);
+}
+
+function rate(quality) {
+  const card = sessionQueue[currentIdx];
+  sm2(card, quality);
+
+  sessionStats.total++;
+  if (quality < 3) sessionStats.again++;
+  else sessionStats.good++;
+
+  const idx = allCards.findIndex(c => c.expression === card.expression);
+  if (idx > -1) allCards[idx] = card;
+  saveData();
+
+  if (quality === 0) {
+    sessionQueue.push({ ...card, reps: 0, nextReview: 0 });
+  }
+
+  currentIdx++;
+  showCard();
+}
+
+function showDone(nothingDue) {
+  document.getElementById('review-screen').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'block';
+  document.getElementById('progress-fill').style.width = '100%';
+
+  const nextReview = allCards
+    .filter(c => c.nextReview > Date.now())
+    .map(c => c.nextReview)
+    .sort()[0];
+
+  const sub = nothingDue
+    ? '今天没有到期的词条，继续保持！'
+    : '很好，坚持就是胜利。';
+  document.getElementById('done-sub').textContent = sub
+    + (nextReview ? ' 下次复习：' + formatDate(nextReview) : '');
+
+  document.getElementById('stat-total').textContent = sessionStats.total;
+  document.getElementById('stat-good').textContent = sessionStats.good;
+  document.getElementById('stat-again').textContent = sessionStats.again;
+}
+
+function restartSession() {
+  buildSession();
+}
+
+function resetAll() {
+  if (confirm('确定要清除所有复习进度吗？词条数据保留，进度归零。')) {
+    allCards.forEach(c => { c.reps = 0; c.ef = 2.5; c.interval = 1; c.nextReview = 0; });
+    saveData();
+    buildSession();
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.getMonth() + 1 + '月' + d.getDate() + '日';
+}
+
+// 如果本地已有数据，直接进入复习
+const existing = loadData();
+if (existing && existing.length > 0) {
+  allCards = existing;
+  buildSession();
+}
+</script>
+</body>
+</html>
