@@ -32,9 +32,11 @@
   #review-screen { display: none; width: 100%; max-width: 560px; }
   .progress-bar-wrap { height: 3px; background: var(--paper-3); border-radius: 99px; margin-bottom: 1.25rem; overflow: hidden; }
   .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
-  .session-meta { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+  .session-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
   .session-label { font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
   .session-count { font-size: 0.85rem; color: var(--ink-2); font-weight: 500; }
+  .log-link { font-size: 0.78rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 0; }
+  .log-link:hover { text-decoration: underline; }
 
   .card { width: 100%; background: white; border: 1px solid var(--paper-3); border-radius: 16px; padding: 2rem 1.75rem; margin-bottom: 1.25rem; }
   .card-front-content { cursor: pointer; }
@@ -76,8 +78,37 @@
   .stat-box { background: white; border: 1px solid var(--paper-3); border-radius: 10px; padding: 1rem 0.5rem; }
   .stat-num { font-family: var(--serif); font-size: 1.5rem; color: var(--ink); }
   .stat-lbl { font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
-  .btn-secondary { display: inline-block; padding: 0.65rem 1.25rem; border: 1px solid var(--paper-3); border-radius: 8px; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-2); background: white; cursor: pointer; margin: 0 5px; transition: background 0.15s; }
+  .btn-secondary { display: inline-block; padding: 0.65rem 1.25rem; border: 1px solid var(--paper-3); border-radius: 8px; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-2); background: white; cursor: pointer; margin: 4px 5px; transition: background 0.15s; }
   .btn-secondary:hover { background: var(--paper-2); }
+  .btn-accent { border-color: var(--accent-2); color: var(--accent); }
+  .btn-accent:hover { background: #faeeda; }
+
+  .backlog-note { font-size: 0.8rem; color: var(--ink-3); line-height: 1.6; margin: 1rem 0 0.5rem; }
+
+  /* settings */
+  .settings-box { margin-top: 2rem; text-align: left; background: white; border: 1px solid var(--paper-3); border-radius: 10px; padding: 0.25rem 1rem; }
+  .settings-box summary { font-size: 0.8rem; color: var(--ink-3); cursor: pointer; padding: 0.65rem 0; list-style: none; }
+  .settings-box summary::before { content: '⚙ '; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-top: 1px solid var(--paper-2); font-size: 0.85rem; color: var(--ink-2); }
+  .settings-row input { width: 64px; padding: 0.35rem 0.5rem; border: 1px solid var(--paper-3); border-radius: 6px; font-family: var(--sans); font-size: 0.85rem; text-align: center; background: var(--paper); }
+  .settings-save { margin: 0.65rem 0; text-align: right; }
+
+  /* today log screen */
+  #log-screen { display: none; width: 100%; max-width: 560px; }
+  .log-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+  .log-title { font-family: var(--serif); font-size: 1.15rem; }
+  .log-list { display: flex; flex-direction: column; gap: 8px; }
+  .log-item { background: white; border: 1px solid var(--paper-3); border-radius: 10px; padding: 0.85rem 1.1rem; cursor: pointer; }
+  .log-item-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .log-expr { font-family: var(--serif); font-size: 0.98rem; }
+  .log-rating { flex-shrink: 0; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
+  .lr-good { background: #eaf3de; color: var(--success); }
+  .lr-hard { background: #faeeda; color: var(--warn); }
+  .lr-again { background: #fcebeb; color: var(--danger); }
+  .log-detail { display: none; margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--paper-2); font-size: 0.84rem; color: var(--ink-2); line-height: 1.7; }
+  .log-item.open .log-detail { display: block; }
+  .log-detail .back-label { margin-top: 0.6rem; }
+  .log-empty { text-align: center; font-size: 0.85rem; color: var(--ink-3); padding: 2rem 0; }
 </style>
 </head>
 <body>
@@ -101,6 +132,7 @@
   </div>
   <div class="session-meta">
     <span class="session-label" id="queue-type">复习中</span>
+    <button class="log-link" onclick="showLog('review')">今日已复习 <span id="log-count-top">0</span></button>
     <span class="session-count" id="queue-count"></span>
   </div>
 
@@ -137,23 +169,88 @@
 
 <div id="done-screen">
   <div class="done-icon">✦</div>
-  <div class="done-title">今日复习完成</div>
+  <div class="done-title" id="done-title">今日复习完成</div>
   <div class="done-sub" id="done-sub"></div>
   <div class="stats-grid">
-    <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-lbl">已复习</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-lbl">今日已复习</div></div>
     <div class="stat-box"><div class="stat-num" id="stat-good">0</div><div class="stat-lbl">记住了</div></div>
     <div class="stat-box"><div class="stat-num" id="stat-again">0</div><div class="stat-lbl">需加强</div></div>
   </div>
-  <button class="btn-secondary" onclick="restartSession()">再来一轮</button>
-  <button class="btn-secondary" onclick="resetAll()">重置进度</button>
+  <div>
+    <button class="btn-secondary" onclick="showLog('done')">查看今日已复习</button>
+    <button class="btn-secondary" id="btn-extra" style="display:none" onclick="extraSession()">再加练一批</button>
+  </div>
+  <div class="backlog-note" id="backlog-note" style="display:none"></div>
+  <button class="btn-secondary btn-accent" id="btn-amnesty" style="display:none" onclick="spreadBacklog()">分摊积压词条</button>
+
+  <details class="settings-box">
+    <summary>每日复习设置</summary>
+    <div class="settings-row"><span>每日总上限（张）</span><input type="number" id="set-cap" min="5" max="500"></div>
+    <div class="settings-row"><span>其中新词上限（张）</span><input type="number" id="set-new" min="0" max="100"></div>
+    <div class="settings-row" style="border-top:none; padding-top:0;">
+      <span style="font-size:0.75rem; color:var(--ink-3);">改动从下一批开始生效</span>
+      <button class="btn-secondary" style="margin:0" onclick="saveSettings()">保存</button>
+    </div>
+  </details>
+  <div style="margin-top:1rem;">
+    <button class="btn-secondary" onclick="resetAll()" style="font-size:0.75rem; color:var(--ink-3);">重置全部进度</button>
+  </div>
+</div>
+
+<div id="log-screen">
+  <div class="log-header">
+    <div class="log-title">今日已复习 <span id="log-count" style="color:var(--ink-3); font-size:0.85rem;"></span></div>
+    <button class="log-link" onclick="closeLog()">← 返回</button>
+  </div>
+  <div class="log-list" id="log-list"></div>
 </div>
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbz2Pd_HJiEbFeJFldvxPjzT0Lt6kqcpC7ne-WNdWj94vAzb501D3uMTRHSw8RXYECwk1w/exec';
-const STORAGE_KEY = 'btw_srs_v2';
+const STORAGE_KEY  = 'btw_srs_v2';      // 卡片数据（向后兼容，新增字段）
+const DAILY_KEY    = 'btw_daily_v1';    // 当日复习日志与新词配额
+const SETTINGS_KEY = 'btw_settings_v1'; // 每日限额设置
+const DAY = 86400000;
+
 let allCards = [], sessionQueue = [], currentIdx = 0;
 let sessionStats = { total: 0, good: 0, again: 0 };
+let settings = { reviewCap: 30, newLimit: 8 };
+let daily = null;
+let logReturnTo = 'done';
 
+/* ── 设置 ── */
+function loadSettings() {
+  try { const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); if (s) settings = { ...settings, ...s }; } catch(e) {}
+}
+function saveSettings() {
+  const cap = parseInt(document.getElementById('set-cap').value, 10);
+  const nl  = parseInt(document.getElementById('set-new').value, 10);
+  if (cap >= 5) settings.reviewCap = cap;
+  if (nl >= 0) settings.newLimit = Math.min(nl, settings.reviewCap);
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  fillSettingsInputs();
+}
+function fillSettingsInputs() {
+  document.getElementById('set-cap').value = settings.reviewCap;
+  document.getElementById('set-new').value = settings.newLimit;
+}
+
+/* ── 当日日志（跨刷新持久） ── */
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function loadDaily() {
+  try {
+    const r = JSON.parse(localStorage.getItem(DAILY_KEY));
+    if (r && r.date === todayStr()) return r;
+  } catch(e) {}
+  return { date: todayStr(), newIntroduced: [], reviewed: [] };
+}
+function saveDaily() { localStorage.setItem(DAILY_KEY, JSON.stringify(daily)); }
+function todayUniqueCount() { return new Set(daily.reviewed.map(r => r.expression)).size; }
+
+/* ── SM-2（带间隔抖动，防止集中到期） ── */
 function sm2(card, quality) {
   if (quality < 3) { card.reps = 0; card.interval = 1; }
   else {
@@ -163,29 +260,41 @@ function sm2(card, quality) {
     card.reps += 1;
   }
   card.ef = Math.max(1.3, card.ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-  card.nextReview = Date.now() + card.interval * 86400000;
+  let iv = card.interval;
+  if (iv >= 3) iv = Math.max(1, Math.round(iv * (0.92 + Math.random() * 0.16))); // ±8% 抖动
+  card.nextReview = Date.now() + iv * DAY;
   return card;
 }
 
-function initCard(v) { return { ...v, reps: 0, ef: 2.5, interval: 1, nextReview: 0 }; }
+function initCard(v) { return { ...v, reps: 0, ef: 2.5, interval: 1, nextReview: 0, introducedAt: null }; }
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(allCards)); }
-function loadData() { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; }
+function loadLocal() { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; }
+
+/* 旧数据迁移：凡复习过的卡视为"已引入" */
+function migrate(card) {
+  if (card.introducedAt === undefined) {
+    card.introducedAt = (card.reps > 0 || card.nextReview > 0) ? Date.now() : null;
+  }
+  return card;
+}
 
 async function loadFromAPI() {
+  loadSettings();
+  daily = loadDaily();
   try {
     const res = await fetch(API_URL);
     const vocab = await res.json();
-    const saved = loadData(), savedMap = {};
-    if (saved) saved.forEach(c => savedMap[c.expression] = c);
+    const saved = loadLocal(), savedMap = {};
+    if (saved) saved.forEach(c => savedMap[c.expression] = migrate(c));
     allCards = vocab.filter(v => v.expression).map(v =>
       savedMap[v.expression] ? { ...savedMap[v.expression], ...v } : initCard(v)
     );
     saveData();
     buildSession();
   } catch (e) {
-    const saved = loadData();
+    const saved = loadLocal();
     if (saved && saved.length > 0) {
-      allCards = saved;
+      allCards = saved.map(migrate);
       document.getElementById('loading-title').textContent = '使用本地缓存';
       document.getElementById('loading-sub').textContent = '网络不可用，使用上次保存的词条。';
       setTimeout(buildSession, 600);
@@ -196,22 +305,56 @@ async function loadFromAPI() {
   }
 }
 
-function buildSession() {
-  const due = allCards.filter(c => c.nextReview <= Date.now());
-  sessionQueue = shuffle(due);
-  if (sessionQueue.length === 0) { showDone(true); return; }
+/* 逾期优先级：逾期越久、间隔越短，越容易忘，越先复习 */
+function overdueScore(c) {
+  const overdueMs = Date.now() - c.nextReview;
+  return overdueMs / ((c.interval || 1) * DAY);
+}
+function dueReviews() {
+  const now = Date.now();
+  return allCards.filter(c => c.introducedAt && c.nextReview <= now)
+                 .sort((a, b) => overdueScore(b) - overdueScore(a));
+}
+function freshCards() { return allCards.filter(c => !c.introducedAt); }
+
+/* ── 组卷：每日总上限内，新词占固定名额，其余给逾期复习 ── */
+function buildSession(extra) {
+  daily = loadDaily();
+  const doneToday = todayUniqueCount();
+  let totalBudget = extra ? settings.reviewCap : Math.max(0, settings.reviewCap - doneToday);
+  if (totalBudget === 0 && !extra) { showDone(true); return; }
+
+  const due = dueReviews();
+  let picks = [];
+
+  if (extra) {
+    picks = due.slice(0, totalBudget); // 加练只清逾期，不上新词
+  } else {
+    const newBudget = Math.min(
+      Math.max(0, settings.newLimit - daily.newIntroduced.length),
+      totalBudget
+    );
+    const news = freshCards().slice(0, newBudget);
+    const reviews = due.slice(0, totalBudget - news.length);
+    picks = news.concat(reviews);
+  }
+
+  if (picks.length === 0) { showDone(true); return; }
+  sessionQueue = shuffle(picks);
   currentIdx = 0;
   sessionStats = { total: 0, good: 0, again: 0 };
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('done-screen').style.display = 'none';
+  document.getElementById('log-screen').style.display = 'none';
   document.getElementById('review-screen').style.display = 'block';
   showCard();
 }
+function extraSession() { buildSession(true); }
 
 function showCard() {
   if (currentIdx >= sessionQueue.length) { showDone(false); return; }
   const card = sessionQueue[currentIdx];
-  const isNew = card.reps === 0;
+  const isNew = !card.introducedAt;
 
   document.getElementById('card-expression').textContent = card.expression;
   document.getElementById('back-expression').textContent = card.expression;
@@ -241,6 +384,7 @@ function showCard() {
   document.getElementById('progress-fill').style.width = (currentIdx / total * 100) + '%';
   document.getElementById('queue-count').textContent = (currentIdx + 1) + ' / ' + total;
   document.getElementById('queue-type').textContent = isNew ? '新词' : '复习';
+  document.getElementById('log-count-top').textContent = todayUniqueCount();
 
   document.getElementById('front-content').style.display = 'block';
   document.getElementById('back-content').style.display = 'none';
@@ -255,13 +399,27 @@ function revealCard() {
 
 function rate(quality) {
   const card = sessionQueue[currentIdx];
+
+  // 首次引入的新词：记录引入时间并消耗当日新词名额
+  if (!card.introducedAt) {
+    card.introducedAt = Date.now();
+    if (!daily.newIntroduced.includes(card.expression)) daily.newIntroduced.push(card.expression);
+  }
   sm2(card, quality);
+
   sessionStats.total++;
   if (quality < 3) sessionStats.again++; else sessionStats.good++;
+
+  // 写入当日日志（同一词多次评分只保留最新一条）
+  daily.reviewed = daily.reviewed.filter(r => r.expression !== card.expression);
+  daily.reviewed.push({ expression: card.expression, quality: quality, ts: Date.now() });
+  saveDaily();
+
   const idx = allCards.findIndex(c => c.expression === card.expression);
   if (idx > -1) allCards[idx] = card;
   saveData();
-  if (quality === 0) sessionQueue.push({ ...card, reps: 0, nextReview: 0 });
+
+  if (quality === 0) sessionQueue.push(idx > -1 ? allCards[idx] : card); // 忘了：本轮内重做
   currentIdx++;
   showCard();
 }
@@ -269,21 +427,121 @@ function rate(quality) {
 function showDone(nothingDue) {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('review-screen').style.display = 'none';
+  document.getElementById('log-screen').style.display = 'none';
   document.getElementById('done-screen').style.display = 'block';
+
+  daily = loadDaily();
+  const remainingDue = dueReviews().length;
+  const remainingNew = freshCards().length;
+  const doneToday = todayUniqueCount();
   const next = allCards.filter(c => c.nextReview > Date.now()).map(c => c.nextReview).sort()[0];
-  document.getElementById('done-sub').textContent =
-    (nothingDue ? '今天没有到期的词条，继续保持！' : '很好，坚持就是胜利。')
-    + (next ? ' 下次复习：' + formatDate(next) : '');
-  document.getElementById('stat-total').textContent = sessionStats.total;
+
+  document.getElementById('done-title').textContent =
+    nothingDue && doneToday === 0 ? '今天没有待复习词条' : '今日任务完成';
+
+  let sub = nothingDue && doneToday === 0
+    ? '没有到期的词条，继续保持！'
+    : '很好，今天的份量到此为止——明天见。';
+  if (next && remainingDue === 0) sub += ' 下次复习：' + formatDate(next);
+  document.getElementById('done-sub').textContent = sub;
+
+  document.getElementById('stat-total').textContent = doneToday;
   document.getElementById('stat-good').textContent = sessionStats.good;
   document.getElementById('stat-again').textContent = sessionStats.again;
+
+  // 剩余逾期提示 + 加练入口
+  const note = document.getElementById('backlog-note');
+  const extraBtn = document.getElementById('btn-extra');
+  if (remainingDue > 0) {
+    note.style.display = 'block';
+    note.textContent = '还有 ' + remainingDue + ' 个逾期词条排在后面' +
+      (remainingNew > 0 ? '，' + remainingNew + ' 个新词等待放行' : '') +
+      '。不必今天清完——按每日节奏走更可持续。';
+    extraBtn.style.display = 'inline-block';
+    extraBtn.textContent = '再加练一批（' + Math.min(remainingDue, settings.reviewCap) + '）';
+  } else {
+    note.style.display = 'none';
+    extraBtn.style.display = 'none';
+  }
+
+  // 积压过大时提供一次性分摊
+  const amnestyBtn = document.getElementById('btn-amnesty');
+  amnestyBtn.style.display = remainingDue > settings.reviewCap * 2 ? 'inline-block' : 'none';
+
+  fillSettingsInputs();
 }
 
-function restartSession() { loadFromAPI(); }
+/* ── 积压大赦：把所有逾期词随机摊到未来 14 天 ── */
+function spreadBacklog() {
+  const overdue = dueReviews();
+  if (overdue.length === 0) return;
+  if (!confirm('将 ' + overdue.length + ' 个逾期词条随机分摊到未来 14 天，从今天起按每日限额正常复习。确定吗？')) return;
+  const now = Date.now();
+  overdue.forEach(c => {
+    c.nextReview = now + Math.floor(Math.random() * 14) * DAY + Math.floor(Math.random() * 12) * 3600000;
+  });
+  saveData();
+  showDone(false);
+}
+
+/* ── 今日已复习列表 ── */
+const QUALITY_LABEL = { 0: ['忘了', 'lr-again'], 3: ['模糊', 'lr-hard'], 5: ['记住了', 'lr-good'] };
+
+function showLog(returnTo) {
+  logReturnTo = returnTo;
+  daily = loadDaily();
+  const list = document.getElementById('log-list');
+  list.innerHTML = '';
+  const entries = [...daily.reviewed].sort((a, b) => b.ts - a.ts);
+  document.getElementById('log-count').textContent = entries.length ? '· ' + entries.length + ' 个' : '';
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="log-empty">今天还没有复习记录。</div>';
+  } else {
+    entries.forEach(e => {
+      const card = allCards.find(c => c.expression === e.expression) || {};
+      const [label, cls] = QUALITY_LABEL[e.quality] || ['—', ''];
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML =
+        '<div class="log-item-head">' +
+          '<span class="log-expr"></span>' +
+          '<span class="log-rating ' + cls + '">' + label + '</span>' +
+        '</div>' +
+        '<div class="log-detail">' +
+          (card.defaultReplacement ? '<div class="back-label">中式默认</div><div></div>' : '') +
+          '<div class="back-label">释义</div><div class="ld-def"></div>' +
+          (card.sampleSentence ? '<div class="back-label">例句</div><div class="ld-sample" style="font-style:italic;"></div>' : '') +
+        '</div>';
+      item.querySelector('.log-expr').textContent = e.expression;
+      const detail = item.querySelector('.log-detail');
+      if (card.defaultReplacement) detail.children[1].textContent = card.defaultReplacement;
+      detail.querySelector('.ld-def').textContent = card.definition || '—';
+      if (card.sampleSentence) detail.querySelector('.ld-sample').textContent = card.sampleSentence;
+      item.addEventListener('click', () => item.classList.toggle('open'));
+      list.appendChild(item);
+    });
+  }
+
+  document.getElementById('review-screen').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'none';
+  document.getElementById('log-screen').style.display = 'block';
+}
+
+function closeLog() {
+  document.getElementById('log-screen').style.display = 'none';
+  if (logReturnTo === 'review' && currentIdx < sessionQueue.length) {
+    document.getElementById('review-screen').style.display = 'block';
+  } else {
+    showDone(false);
+  }
+}
 
 function resetAll() {
   if (confirm('确定要清除所有复习进度吗？')) {
-    allCards.forEach(c => { c.reps = 0; c.ef = 2.5; c.interval = 1; c.nextReview = 0; });
+    allCards.forEach(c => { c.reps = 0; c.ef = 2.5; c.interval = 1; c.nextReview = 0; c.introducedAt = null; });
+    localStorage.removeItem(DAILY_KEY);
+    daily = loadDaily();
     saveData(); buildSession();
   }
 }
